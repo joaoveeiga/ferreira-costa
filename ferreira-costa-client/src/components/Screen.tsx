@@ -1,6 +1,6 @@
-import { VStack } from "native-base";
+import { Pressable, VStack } from "native-base";
 import React from "react";
-import { StyleProp, ViewProps, ViewStyle } from "react-native";
+import { Keyboard, StyleProp, ViewProps, ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface ScreenProps extends ViewProps {
@@ -10,14 +10,15 @@ interface ScreenProps extends ViewProps {
 export const Screen: React.FC<ScreenProps> = ({ children, ...rest }) => {
   const { top, bottom } = useSafeAreaInsets();
   return (
-    <VStack
-      style={{ paddingTop: top, paddingBottom: bottom }}
-      bgColor={"coolGray.200"}
-      flex={1}
-      px={8}
-      {...rest}
-    >
-      {children}
-    </VStack>
+    <Pressable onPress={Keyboard.dismiss} flex={1}>
+      <VStack
+        style={{ paddingTop: top, paddingBottom: bottom }}
+        bgColor={"coolGray.200"}
+        flex={1}
+        {...rest}
+      >
+        {children}
+      </VStack>
+    </Pressable>
   );
 };

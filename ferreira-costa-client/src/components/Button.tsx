@@ -6,12 +6,12 @@ type ButtonProps = IButtonProps & {
   labelColor?: string;
   pressedBgColor?: string
 };
-export const Button = ({ label, labelColor = "white", pressedBgColor = "darkBlue.700", ...rest }: ButtonProps) => {
+export const Button = ({ label, labelColor = "white", pressedBgColor = "darkBlue.900", ...rest }: ButtonProps) => {
   return (
     <NativeBaseButton
       w={"full"}
       h={12}
-      bg="darkBlue.600"
+      bg="darkBlue.800"
       _pressed={{
         bgColor: pressedBgColor,
       }}
