@@ -9,7 +9,7 @@ type TextProps = NativeBaseTextProps & {
 }
 
 export const Text: React.FC<TextProps> = ({
-  color = "darkBlue.600",
+  color = "darkBlue.800",
   ...props
 }: Readonly<TextProps>) => {
 
