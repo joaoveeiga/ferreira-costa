@@ -1,13 +1,13 @@
-import { HttpStatus, ImATeapotException } from '@nestjs/common';
 /* eslint-disable prettier/prettier */
-import { DatabaseUtils } from './../common/utils/database.utils';
+import { HttpStatus, ImATeapotException } from '@nestjs/common';
 import { Inject, Injectable } from '@nestjs/common';
-import { CreateEditUserDTO, ListAllUsers } from 'src/common/dtos';
-import { Op, literal, col, fn } from 'sequelize';
-import { User } from 'src/common/models';
-import { AgeGroup, StatusEnum } from 'src/common/enum';
+import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
-import { Sequelize } from 'sequelize-typescript';
+import { Op } from 'sequelize';
+import { CreateEditUserDTO, ListAllUsers } from 'src/common/dtos';
+import { AgeGroup, StatusEnum } from 'src/common/enum';
+import { User } from 'src/common/models';
+import { DatabaseUtils } from './../common/utils/database.utils';
 
 @Injectable()
 export class UsersService {
@@ -88,11 +88,11 @@ export class UsersService {
   }
 
   async createEditUser({ birthday, cpf, email, login, motherName, name, password, phoneNumber, status, id }: CreateEditUserDTO) {
-    if(status && !Object.values(StatusEnum).includes(status)) {
+    if (status && !Object.values(StatusEnum).includes(status)) {
       throw new ImATeapotException("Status inválido.")
     }
 
-    if(password && password.length < 6) {
+    if (password && password.length < 6) {
       throw new ImATeapotException("A senha deve ter 6 caracteres ou mais.")
     }
     if (id) {
@@ -103,7 +103,7 @@ export class UsersService {
         login,
         motherName,
         name,
-        password,
+        password: bcrypt.hashSync(password, 8),
         phoneNumber,
         status
       }, {
@@ -124,6 +124,5 @@ export class UsersService {
         status
       })
     }
-    return HttpStatus.OK
   }
 }
