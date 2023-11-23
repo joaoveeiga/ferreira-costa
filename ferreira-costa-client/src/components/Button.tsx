@@ -4,9 +4,14 @@ import React from "react";
 type ButtonProps = IButtonProps & {
   label: string;
   labelColor?: string;
-  pressedBgColor?: string
+  pressedBgColor?: string;
 };
-export const Button = ({ label, labelColor = "white", pressedBgColor = "darkBlue.900", ...rest }: ButtonProps) => {
+export const Button = ({
+  label,
+  labelColor = "white",
+  pressedBgColor = "darkBlue.900",
+  ...rest
+}: ButtonProps) => {
   return (
     <NativeBaseButton
       w={"full"}

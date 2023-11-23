@@ -24,18 +24,22 @@ export const validateChecksumDigits = (cpf: string) => {
 export const formatDate = (date: Date) => `${String(date.getDay()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
 
 export const applyPhoneMask = (value: string) => {
+  if (value)
+    return value
+      .replace(/\D/g, '')
+      .replace(/^(\d\d)(\d)/g, '($1) $2')
+      .replace(/(\d{5})(\d)/, '$1-$2')
   return value
-    .replace(/\D/g, '')
-    .replace(/^(\d\d)(\d)/g, '($1) $2')
-    .replace(/(\d{5})(\d)/, '$1-$2')
 }
 
 export const applyCpfMask = (value: string) => {
+  if (value)
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
   return value
-    .replace(/\D/g, '')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d)/, '$1.$2')
-    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
 }
 
-export const removeMask = (value) => value.replace(/\D/g, '')
+export const removeMask = (value: string) => value ? value.replace(/\D/g, '') : value
