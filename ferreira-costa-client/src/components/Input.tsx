@@ -29,7 +29,6 @@ export const Input = ({
           isInvalid={invalid}
           bgColor="white"
           type={show ? "text" : "password"}
-          
           rightElement={
             <Pressable onPress={() => setShow(!show)}>
               <Icon

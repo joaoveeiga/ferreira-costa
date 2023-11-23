@@ -30,7 +30,9 @@ export const LoginScreen = () => {
 
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const onPressLogin = () => navigation.replace("HomeNavigator");
-  const onPressSignUp = () => navigation.navigate("SignUpScreen");
+  const onPressSignUp = () => navigation.navigate("AddNewUserScreen", {
+    label: 'Crie a sua conta'
+  });
   const onPressForgotPassword = () =>
     navigation.navigate("ForgotPasswordScreen");
   return (
