@@ -4,11 +4,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
 import { Op } from 'sequelize';
-import { CreateEditUserDTO, ListAllUsers } from 'src/common/dtos';
+import { CreateEditUserDTO, ListAllUsers, LoginUserDTO } from 'src/common/dtos';
 import { AgeGroup, StatusEnum } from 'src/common/enum';
 import { User } from 'src/common/models';
 import { DatabaseUtils } from './../common/utils/database.utils';
 
+const salt = 8
 @Injectable()
 export class UsersService {
   constructor(
@@ -71,9 +72,10 @@ export class UsersService {
   }
 
   async deleteAll() {
-    return this.usersRepository.update({ status: StatusEnum.INACTIVE }, {
+    await this.usersRepository.update({ status: StatusEnum.INACTIVE }, {
       where: {}
     })
+    return HttpStatus.OK
   }
 
   async deleteUserById(id: number) {
@@ -85,9 +87,11 @@ export class UsersService {
         }
       }
     );
+    return HttpStatus.OK;
   }
 
   async createEditUser({ birthday, cpf, email, login, motherName, name, password, phoneNumber, status, id }: CreateEditUserDTO) {
+    let user
     if (status && !Object.values(StatusEnum).includes(status)) {
       throw new ImATeapotException("Status inválido.")
     }
@@ -96,14 +100,14 @@ export class UsersService {
       throw new ImATeapotException("A senha deve ter 6 caracteres ou mais.")
     }
     if (id) {
-      await this.usersRepository.update({
+      user = await this.usersRepository.update({
         birthday,
         cpf,
         email,
         login,
         motherName,
         name,
-        password: bcrypt.hashSync(password, 8),
+        password: bcrypt.hashSync(password, salt),
         phoneNumber,
         status
       }, {
@@ -112,7 +116,7 @@ export class UsersService {
         }
       })
     } else {
-      await this.usersRepository.create({
+      user = await this.usersRepository.create({
         birthday,
         cpf,
         email,
@@ -124,5 +128,26 @@ export class UsersService {
         status
       })
     }
+
+    if(!user) {
+      throw new ImATeapotException("Ocorreu um erro")
+    }
+    return HttpStatus.OK
+  }
+
+  async login({ login, password }: LoginUserDTO) {
+    const user = await this.usersRepository.findOne({
+      where: {
+        login
+      }
+    })
+    if(!user) {
+      return HttpStatus.NOT_FOUND
+    }
+
+    if(bcrypt.compareSync(password, user.password)) {
+      return HttpStatus.OK
+    }
+    return HttpStatus.FORBIDDEN
   }
 }
