@@ -13,6 +13,7 @@ import { Modal } from "./Modal";
 import { Button } from "./Button";
 import { useState } from "react";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useLoggedUser } from "../hooks/useLoggedUser";
 
 export const AppBar = ({ label }) => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
@@ -22,13 +23,19 @@ export const AppBar = ({ label }) => {
       navigation.goBack();
     }
   };
+  const [_, { setLogged }] = useLoggedUser();
 
-  const logout = () => navigation.navigate("AuthNavigator", {
-   screen: "SignUpScreen" 
-  })
+  const [{ logged }] = useLoggedUser();
 
-  const [showModal, setShowModal] = useState(false)
-  const toggleModal = () => setShowModal(prevState => !prevState)
+  const logout = () => {
+    navigation.navigate("AuthNavigator", {
+      screen: "SignUpScreen",
+    });
+    setLogged(false)
+  };
+
+  const [showModal, setShowModal] = useState(false);
+  const toggleModal = () => setShowModal((prevState) => !prevState);
 
   return (
     <VStack>
@@ -64,15 +71,17 @@ export const AppBar = ({ label }) => {
             <Text color="white" fontSize="20" fontWeight="bold">
               {label}
             </Text>
-            <Center>
-              <Icon
-                size="md"
-                as={<MaterialIcons name="logout" />}
-                name="menu"
-                color="white"
-                onPress={toggleModal}
-              />
-            </Center>
+            {logged && (
+              <Center>
+                <Icon
+                  size="md"
+                  as={<MaterialIcons name="logout" />}
+                  name="menu"
+                  color="white"
+                  onPress={toggleModal}
+                />
+              </Center>
+            )}
           </HStack>
         </HStack>
       </HStack>

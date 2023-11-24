@@ -2,7 +2,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Put } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from 'src/business/users.service';
-import { ListAllUsers, UsersDTO,CreateEditUserDTO, LoginUserDTO } from 'src/common/dtos';
+import { ListAllUsers, UsersDTO,CreateEditUserDTO, LoginUserDTO, VerifyEmailCpfDTO, UpdatePasswordDTO } from 'src/common/dtos';
 import { User } from 'src/common/models/user.model';
 import { ApiExceptionError } from 'src/common/utils';
 
@@ -34,6 +34,16 @@ export class UsersController {
     return this.service.login(data)
   }
 
+  @Post("/verify-email-cpf")
+  @HttpCode(200)
+  @ApiTags('Users')
+  @ApiOperation({ description: 'Verifica email e cpf do usuário' })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiBody({ type: VerifyEmailCpfDTO})
+  verifyEmailCpf(@Body() data: VerifyEmailCpfDTO): Promise<number> {
+    return this.service.verifyEmailCpf(data)
+  }
+
   @Post()
   @HttpCode(200)
   @ApiTags('Users')
@@ -51,6 +61,15 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.OK })
   deleteAll(): Promise<any> {
     return this.service.deleteAll()
+  }
+
+  @Put("/update-password")
+  @HttpCode(200)
+  @ApiTags('Users')
+  @ApiOperation({ description: 'Atualizar senha do usuário' })
+  @ApiResponse({ status: HttpStatus.OK })
+  updatePassword(@Body() data: UpdatePasswordDTO): Promise<any> {
+    return this.service.updatePassword(data)
   }
 
   @Put("/:id")

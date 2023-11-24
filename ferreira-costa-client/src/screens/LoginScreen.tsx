@@ -2,12 +2,15 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ParamListBase, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Center, Icon, VStack } from "native-base";
-import React from "react";
+import { Center, HStack, Icon, VStack } from "native-base";
+import React, { useState } from "react";
 import { Controller, Resolver, useForm } from "react-hook-form";
 import { Image } from "react-native";
 import * as yup from "yup";
 import { Button, Input, Screen, Text } from "../components";
+import usePostRequest from "../hooks/usePostRequest";
+import { Modal } from "../components/Modal";
+import { useLoggedUser } from "../hooks/useLoggedUser";
 
 type LoginFormProps = {
   login: string;
@@ -28,8 +31,28 @@ export const LoginScreen = () => {
     resolver: yupResolver(loginSchema) as Resolver<LoginFormProps, any>,
   });
 
+  const [showModal, setShowModal] = useState(false);
+  const toggleModal = () => setShowModal((prevState) => !prevState);
+  const [_, {setLogged}] = useLoggedUser()
+
+  const { mutate } = usePostRequest("/users/login", {
+    onSuccess: () => {
+      navigation.replace("HomeNavigator")
+      setLogged(true)
+    },
+    onError: () => {
+      toggleModal()
+    },
+  })
+
+  function submit(data: LoginFormProps) {
+    mutate(data);
+  }
+
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const onPressLogin = () => navigation.replace("HomeNavigator");
+  const onPressLogin = () => {
+    return handleSubmit(submit);
+  };
   const onPressSignUp = () => navigation.navigate("AddNewUserScreen", {
     label: 'Crie a sua conta'
   });
@@ -102,7 +125,7 @@ export const LoginScreen = () => {
           ></Button>
         </VStack>
         <VStack>
-          <Button label="Login" onPress={onPressLogin}></Button>
+          <Button label="Login" onPress={onPressLogin()}></Button>
           <Button
             bgColor="transparent"
             label="Cadastre-se"
@@ -112,6 +135,21 @@ export const LoginScreen = () => {
           ></Button>
         </VStack>
       </VStack>
+      <Modal dismiss={toggleModal} title="Atenção!" isOpen={showModal}>
+        <VStack>
+          <Text fontSize={"md"}>
+            Login e/ou senha incorreto(s).
+          </Text>
+          <HStack justifyContent={"space-between"} mt={8}>
+            <Button
+              w={"full"}
+              label="Ok"
+              borderRadius={8}
+              onPress={toggleModal}
+            />
+          </HStack>
+        </VStack>
+      </Modal>
     </Screen>
   );
 };

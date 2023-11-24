@@ -4,12 +4,14 @@ import { AppBar } from "../components/AppBar";
 import { UserForm } from "../components/UserForm";
 
 type AddNewUserScreenProps = {
-  label?: string
-}
+  label?: string;
+};
 
-export const AddNewUserScreen = ({label = 'Novo usuário'}: AddNewUserScreenProps) => {
-  const route = useRoute()
-  const {label: routeLabel} = route?.params as AddNewUserScreenProps ?? {}
+export const AddNewUserScreen = ({
+  label = "Novo usuário",
+}: AddNewUserScreenProps) => {
+  const route = useRoute();
+  const { label: routeLabel } = (route?.params as AddNewUserScreenProps) ?? {};
   return (
     <Screen>
       <AppBar label={routeLabel ?? label} />

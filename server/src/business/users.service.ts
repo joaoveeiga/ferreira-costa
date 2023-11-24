@@ -1,13 +1,13 @@
 /* eslint-disable prettier/prettier */
-import { HttpStatus, ImATeapotException } from '@nestjs/common';
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpStatus, ImATeapotException, Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
 import { Op } from 'sequelize';
-import { CreateEditUserDTO, ListAllUsers, LoginUserDTO } from 'src/common/dtos';
-import { AgeGroup, StatusEnum } from 'src/common/enum';
+import { CreateEditUserDTO, ListAllUsers, LoginUserDTO, UpdatePasswordDTO, VerifyEmailCpfDTO } from 'src/common/dtos';
+import { AgeGroup, OrderBy, StatusEnum } from 'src/common/enum';
 import { User } from 'src/common/models';
 import { DatabaseUtils } from './../common/utils/database.utils';
+import { Sequelize } from 'sequelize';
 
 const salt = 8
 @Injectable()
@@ -17,8 +17,8 @@ export class UsersService {
     private usersRepository: typeof User
   ) { }
 
-  async findAll({ count, filters, page, search }: ListAllUsers) {
-    const { ageGroup, cpf, createdDate, login, status, updatedDate } = filters ?? {}
+  async findAll({ count, cpf, login, orderBy, status, page, search, ageGroup }: ListAllUsers) {
+    console.log({ count, cpf, login, orderBy, status, page, search, ageGroup })
     const filterAgeGroup = []
     const subtractYearsFromToday = (years: number) => new Date(moment().subtract(years, 'years').format('YYYY-MM-DD'))
     switch (ageGroup) {
@@ -43,30 +43,49 @@ export class UsersService {
         break;
     }
 
+    let column: string;
+
+    switch (orderBy) {
+      case OrderBy.BIRTHDAY:
+        column = 'birthday'
+        break;
+      case OrderBy.CREATED_AT:
+        column = 'createdAt'
+        break;
+      case OrderBy.UPDATED_AT:
+        column = 'updatedAt'
+        break;
+      default:
+        column = 'id'
+        break;
+    }
+
     const where = [
       { ...(search && DatabaseUtils.noSensitive("name", search)) },
       { ...(login && DatabaseUtils.noSensitive("login", login)) },
       { ...(cpf && DatabaseUtils.noSensitive("cpf", cpf)) },
-      // {
-      //   ...(ageGroup && { birthday: { [Op.lt]: new Date(filterAgeGroup[0]) } })
-      // }
+      {
+        ...(ageGroup && { birthday: { [Op.lt]: Sequelize.fn('TO_DATE', filterAgeGroup[0], 'YYYY-MM-DD') } })
+      }
     ];
-
     if (status) {
       where.push({ status: { [Op.eq]: status } } as any)
     }
     else {
       where.push({ status: { [Op.ne]: StatusEnum.INACTIVE } } as any)
     }
-    // if (ageGroup && ageGroup !== AgeGroup.EXPERIENCED) {
-    //   where.push({ birthday: { [Op.gt]: new Date(filterAgeGroup[1]) } } as any);
-    // }
+    if (ageGroup && ageGroup !== AgeGroup.EXPERIENCED) {
+      where.push({ birthday: { [Op.gt]: Sequelize.fn('TO_DATE', filterAgeGroup[1], 'YYYY-MM-DD') } } as any);
+    }
 
     const { count: total, rows } = await this.usersRepository.findAndCountAll({
       where: {
         [Op.and]: where
       },
-      ...DatabaseUtils.pagination(page, count)
+      ...DatabaseUtils.pagination(page, count),
+      order: [
+        [column, 'ASC']
+      ]
     });
     return { total, rows }
   }
@@ -100,6 +119,10 @@ export class UsersService {
       throw new ImATeapotException("A senha deve ter 6 caracteres ou mais.")
     }
     if (id) {
+      const alreadyExistsThisLogin = await this.usersRepository.findOne({ where: { login } })
+      if (alreadyExistsThisLogin && alreadyExistsThisLogin.id !== id) {
+        throw new ImATeapotException()
+      }
       user = await this.usersRepository.update({
         birthday,
         cpf,
@@ -107,7 +130,7 @@ export class UsersService {
         login,
         motherName,
         name,
-        password: bcrypt.hashSync(password, salt),
+        password: await bcrypt.hash(password, salt),
         phoneNumber,
         status
       }, {
@@ -116,6 +139,10 @@ export class UsersService {
         }
       })
     } else {
+      const alreadyExistsThisLogin = await this.usersRepository.findOne({ where: { login } })
+      if (alreadyExistsThisLogin) {
+        throw new ImATeapotException()
+      }
       user = await this.usersRepository.create({
         birthday,
         cpf,
@@ -123,13 +150,13 @@ export class UsersService {
         login,
         motherName,
         name,
-        password,
+        password: await bcrypt.hash(password, salt),
         phoneNumber,
         status
       })
     }
 
-    if(!user) {
+    if (!user) {
       throw new ImATeapotException("Ocorreu um erro")
     }
     return HttpStatus.OK
@@ -141,13 +168,45 @@ export class UsersService {
         login
       }
     })
-    if(!user) {
-      return HttpStatus.NOT_FOUND
+
+    if (!user) {
+      throw new ImATeapotException("Not found")
     }
 
-    if(bcrypt.compareSync(password, user.password)) {
+    if (bcrypt.compareSync(password, user.password)) {
       return HttpStatus.OK
     }
-    return HttpStatus.FORBIDDEN
+    throw new ImATeapotException()
+  }
+
+  async verifyEmailCpf({ email, cpf }: VerifyEmailCpfDTO) {
+    const user = await this.usersRepository.findOne({
+      where: {
+        [Op.and]: {
+          email,
+          cpf
+        }
+      }
+    })
+
+    if (!user) {
+      throw new ImATeapotException()
+    }
+    return user.id
+  }
+
+  async updatePassword({ id, password }: UpdatePasswordDTO) {
+    const user = await this.usersRepository.findOne({ where: { id } })
+
+    if (!user) {
+      throw new ImATeapotException()
+    }
+    await this.usersRepository.update({
+      password: await bcrypt.hash(password, salt),
+    }, {
+      where: {
+        id
+      }
+    })
   }
 }

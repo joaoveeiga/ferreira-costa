@@ -21,7 +21,10 @@ export const validateChecksumDigits = (cpf: string) => {
   );
 };
 
-export const formatDate = (date: Date) => `${String(date.getDay()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+export const formatDate = (date: string | Date) => {
+  const _date = new Date(date)
+  return `${String(_date.getDay()).padStart(2, '0')}/${String(_date.getMonth() + 1).padStart(2, '0')}/${_date.getFullYear()}`
+}
 
 export const applyPhoneMask = (value: string) => {
   if (value)

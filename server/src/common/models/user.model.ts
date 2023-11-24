@@ -74,4 +74,18 @@ export class User extends Model<User> {
     allowNull: false,
   })
   status: string;
+
+  @Column({
+    field: 'createdAt',
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  createdAt: string;
+
+  @Column({
+    field: 'updatedAt',
+    type: DataType.DATE,
+    allowNull: false,
+  })
+  updatedAt: string;
 }

@@ -1,7 +1,7 @@
 import { yupResolver } from "@hookform/resolvers/yup";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { ScrollView, VStack } from "native-base";
-import { useEffect, useState } from "react";
+import { HStack, ScrollView, VStack } from "native-base";
+import { useState } from "react";
 import { Controller, Resolver, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { Button, Input, Select, SelectItem, Text } from "../components";
@@ -13,6 +13,12 @@ import {
   removeMask,
   validateChecksumDigits,
 } from "../utils";
+import { useLoggedUser } from "../hooks/useLoggedUser";
+import usePostRequest from "../hooks/usePostRequest";
+import { ParamListBase, useNavigation } from "@react-navigation/native";
+import { Modal } from "./Modal";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useListUsers } from "../hooks/useListUsers";
 
 type UserFormDataProps = {
   name: string;
@@ -62,26 +68,52 @@ type UserFormProps = {
 };
 
 export const UserForm = ({ isEditingUser = false, user }: UserFormProps) => {
+  const [{users},{setUsers}] = useListUsers()
   const { control, handleSubmit, formState, setValue } =
     useForm<UserFormDataProps>({
       resolver: yupResolver(userSchema) as Resolver<UserFormDataProps, any>,
       defaultValues: {
         name: user?.name,
-        birthday: user?.birthday,
-        cpf: user?.cpf,
+        birthday: user && formatDate(user?.birthday),
+        cpf: user && removeMask(user?.cpf),
         email: user?.email,
         login: user?.login,
         motherName: user?.motherName,
-        password: user?.password,
-        passwordConfirmation: user?.passwordConfirmation,
-        phoneNumber: user?.phoneNumber,
+        phoneNumber: user && removeMask(user?.phoneNumber),
         status: user?.status,
       },
     });
   const { errors } = formState;
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+
+  const toggleSuccessModal = () =>
+    setShowSuccessModal((prevState) => !prevState);
+  const toggleErrorModal = () => setShowErrorModal((prevState) => !prevState);
+  const [{ logged }] = useLoggedUser();
+
+  const onPressSuccess = () => {
+    toggleSuccessModal();
+    if (logged) {
+      return navigation.replace("HomeNavigator");
+    }
+    return navigation.goBack();
+  };
+
+  const { mutate } = usePostRequest("/users/create-edit", {
+    onSuccess: () => {
+      setUsers([])
+      toggleSuccessModal();
+    },
+    onError: () => {
+      toggleErrorModal();
+    },
+  });
 
   function submit(data: UserFormDataProps) {
-    console.log(data);
+    mutate({ ...data, id: user.id });
   }
 
   const [name, setName] = useState(user?.name);
@@ -204,7 +236,6 @@ export const UserForm = ({ isEditingUser = false, user }: UserFormProps) => {
             <Input
               errorMessage={errors.password?.message}
               placeholder="Insira sua senha"
-              value={password}
               onChangeText={handleOnChangePassword}
               password
             ></Input>
@@ -221,7 +252,6 @@ export const UserForm = ({ isEditingUser = false, user }: UserFormProps) => {
               errorMessage={errors.passwordConfirmation?.message}
               password
               placeholder="Confirme a sua senha"
-              value={passwordConfirmation}
               onChangeText={handleOnChangePasswordConfirmation}
             ></Input>
           )}
@@ -341,6 +371,45 @@ export const UserForm = ({ isEditingUser = false, user }: UserFormProps) => {
           onPress={handleSubmit(submit)}
         ></Button>
       </VStack>
+      <Modal
+        dismiss={toggleSuccessModal}
+        title="Ótimo"
+        isOpen={showSuccessModal}
+      >
+        <VStack>
+          <Text fontSize={"md"}>
+            O usuário foi cadastrado <Text bold>corretamente</Text>!
+          </Text>
+          <HStack justifyContent={"space-between"} mt={8}>
+            <Button
+              w={"full"}
+              label="Ok"
+              borderRadius={8}
+              onPress={onPressSuccess}
+            />
+          </HStack>
+        </VStack>
+      </Modal>
+
+      <Modal
+        dismiss={toggleErrorModal}
+        title="Atenção!"
+        isOpen={showErrorModal}
+      >
+        <VStack>
+          <Text fontSize={"md"}>
+            O usuário foi <Text bold>não</Text> cadastrado !
+          </Text>
+          <HStack justifyContent={"space-between"} mt={8}>
+            <Button
+              w={"full"}
+              label="Ok"
+              borderRadius={8}
+              onPress={toggleErrorModal}
+            />
+          </HStack>
+        </VStack>
+      </Modal>
     </VStack>
   );
 };
