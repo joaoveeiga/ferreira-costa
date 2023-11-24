@@ -2,11 +2,14 @@ import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { ParamListBase, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Icon, VStack } from "native-base";
+import { HStack, Icon, VStack } from "native-base";
 import { Controller, Resolver, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { Button, Input, Screen, Text } from "../components";
 import { AppBar } from "../components/AppBar";
+import usePostRequest from "../hooks/usePostRequest";
+import { Modal } from "../components/Modal";
+import { useState } from "react";
 
 type ForgotPasswordFormProps = {
   email: string;
@@ -20,7 +23,24 @@ const forgotPasswordSchema = yup.object({
 
 export const ForgotPasswordScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const onPress = () => navigation.replace("ChangePasswordScreen");
+  function submit(data: ForgotPasswordFormProps) {
+    mutate(data);
+  }
+  const [showErrorModal, setShowErrorModal] = useState(false);
+
+  const toggleErrorModal = () => setShowErrorModal((prevState) => !prevState);
+
+  const { mutate } = usePostRequest("/users/verify-email-cpf", {
+    onSuccess: ({data}) => {
+      navigation.replace("ChangePasswordScreen", {
+        id: data
+      })
+    },
+    onError: () => {
+      toggleErrorModal();
+    },
+  });
+
   const {
     control,
     handleSubmit,
@@ -91,9 +111,28 @@ export const ForgotPasswordScreen = () => {
           ></Controller>
         </VStack>
         <VStack>
-          <Button label="Avançar" onPress={onPress}></Button>
+          <Button label="Avançar" onPress={handleSubmit(submit)}></Button>
         </VStack>
       </VStack>
+      <Modal
+        dismiss={toggleErrorModal}
+        title="Atenção!"
+        isOpen={showErrorModal}
+      >
+        <VStack>
+          <Text fontSize={"md"}>
+            Email e CPF não estão associados.
+          </Text>
+          <HStack justifyContent={"space-between"} mt={8}>
+            <Button
+              w={"full"}
+              label="Ok"
+              borderRadius={8}
+              onPress={toggleErrorModal}
+            />
+          </HStack>
+        </VStack>
+      </Modal>
     </Screen>
   );
 };
