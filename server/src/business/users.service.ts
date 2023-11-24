@@ -2,12 +2,11 @@
 import { HttpStatus, ImATeapotException, Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { CreateEditUserDTO, ListAllUsers, LoginUserDTO, UpdatePasswordDTO, VerifyEmailCpfDTO } from 'src/common/dtos';
 import { AgeGroup, OrderBy, StatusEnum } from 'src/common/enum';
 import { User } from 'src/common/models';
 import { DatabaseUtils } from './../common/utils/database.utils';
-import { Sequelize } from 'sequelize';
 
 const salt = 8
 @Injectable()
@@ -18,7 +17,6 @@ export class UsersService {
   ) { }
 
   async findAll({ count, cpf, login, orderBy, status, page, search, ageGroup }: ListAllUsers) {
-    console.log({ count, cpf, login, orderBy, status, page, search, ageGroup })
     const filterAgeGroup = []
     const subtractYearsFromToday = (years: number) => new Date(moment().subtract(years, 'years').format('YYYY-MM-DD'))
     switch (ageGroup) {
@@ -171,6 +169,10 @@ export class UsersService {
 
     if (!user) {
       throw new ImATeapotException("Not found")
+    }
+
+    if (user.status !== StatusEnum.ACTIVE) {
+      throw new ImATeapotException("Cadastro inativo ou bloqueado.")
     }
 
     if (bcrypt.compareSync(password, user.password)) {
